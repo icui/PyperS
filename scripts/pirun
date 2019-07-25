@@ -1,0 +1,15 @@
+#!/usr/bin/env python
+
+from piper.tools.shell import mkdir
+
+if __name__ == '__main__':
+	""" load modules, create and execute pipeline
+	"""
+	# create output and working dirs
+	mkdir('output')
+	mkdir('scratch')
+
+	# create and submit pipeline
+	from piper.modules import pipeline
+	pipeline.pipe()
+	pipeline.submit()

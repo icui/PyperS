@@ -1,0 +1,105 @@
+MODEL                           = 1D_transversely_isotropic_prem
+
+USE_FORCE_POINT_SOURCE          = .false.
+RECORD_LENGTH_IN_MINUTES        = 120.0d0
+
+NCHUNKS                         = 6
+NPROC_XI                        = 1
+NPROC_ETA                       = 1
+NEX_XI                          = 48
+NEX_ETA                         = 48
+
+SIMULATION_TYPE                 = 1
+NOISE_TOMOGRAPHY                = 0
+SAVE_FORWARD                    = .true.
+
+UNDO_ATTENUATION                = .false.
+READ_ADJSRC_ASDF                = .false.
+ADIOS_ENABLED                   = .false.
+
+OUTPUT_SEISMOS_ASCII_TEXT       = .false.
+OUTPUT_SEISMOS_SAC_ALPHANUM     = .false.
+OUTPUT_SEISMOS_SAC_BINARY       = .true.
+OUTPUT_SEISMOS_ASDF             = .false.
+
+NTSTEP_BETWEEN_OUTPUT_INFO      = 1000
+NTSTEP_BETWEEN_OUTPUT_SEISMOS   = 5000000
+NTSTEP_BETWEEN_READ_ADJSRC      = 1000000
+
+OCEANS                          = .false.
+ELLIPTICITY                     = .false.
+TOPOGRAPHY                      = .false.
+GRAVITY                         = .false.
+ROTATION                        = .false.
+ATTENUATION                     = .false.
+
+ANGULAR_WIDTH_XI_IN_DEGREES     = 90.d0
+ANGULAR_WIDTH_ETA_IN_DEGREES    = 90.d0
+CENTER_LATITUDE_IN_DEGREES      = 40.d0
+CENTER_LONGITUDE_IN_DEGREES     = 10.d0
+GAMMA_ROTATION_AZIMUTH          = 20.d0
+
+NUMBER_OF_RUNS                  = 1
+NUMBER_OF_THIS_RUN              = 1
+NUMBER_OF_SIMULTANEOUS_RUNS     = 1
+
+USE_LDDRK                       = .false.
+INCREASE_CFL_FOR_LDDRK          = .true.
+RATIO_BY_WHICH_TO_INCREASE_IT   = 1.5d0
+
+ABSORBING_CONDITIONS            = .false.
+ANISOTROPIC_KL                  = .false.
+APPROXIMATE_HESS_KL             = .false.
+EXACT_MASS_MATRIX_FOR_ROTATION  = .false.
+PARTIAL_PHYS_DISPERSION_ONLY    = .false.
+RECEIVERS_CAN_BE_BURIED         = .true.
+USE_FULL_TISO_MANTLE            = .false.
+
+BROADCAST_SAME_MESH_AND_MODEL   = .false.
+PRINT_SOURCE_TIME_FUNCTION      = .true.
+ROTATE_SEISMOGRAMS_RT           = .false.
+USE_BINARY_FOR_LARGE_FILE       = .false.
+WRITE_SEISMOGRAMS_BY_MASTER     = .false.
+
+SAVE_MESH_FILES                 = .false.
+SAVE_SEISMOGRAMS_STRAIN         = .false.
+SAVE_SEISMOGRAMS_IN_ADJOINT_RUN = .false.
+SAVE_ALL_SEISMOS_IN_ONE_FILE    = .false.
+SAVE_TRANSVERSE_KL_ONLY         = .false.
+SAVE_SOURCE_MASK                = .false.
+SAVE_REGULAR_KL                 = .false.
+
+MOVIE_SURFACE                   = .false.
+MOVIE_VOLUME                    = .false.
+MOVIE_COARSE                    = .true.
+NTSTEP_BETWEEN_FRAMES           = 100
+HDUR_MOVIE                      = 0.d0
+MOVIE_VOLUME_TYPE               = 2
+MOVIE_TOP_KM                    = -100.0
+MOVIE_BOTTOM_KM                 = 1000.0
+MOVIE_WEST_DEG                  = -90.0
+MOVIE_EAST_DEG                  = 90.0
+MOVIE_NORTH_DEG                 = 90.0
+MOVIE_SOUTH_DEG                 = -90.0
+MOVIE_START                     = 0
+MOVIE_STOP                      = 40000
+
+MEMORY_INSTALLED_PER_CORE_IN_GB = 4.d0
+PERCENT_OF_MEM_TO_USE_PER_CORE  = 85.d0
+
+LOCAL_PATH                      = ./DATABASES_MPI
+LOCAL_TMP_PATH                  = ./DATABASES_MPI
+
+GPU_MODE                        = .true.
+GPU_RUNTIME                     = 1
+GPU_PLATFORM                    = NVIDIA
+GPU_DEVICE                      = Tesla
+
+ADIOS_FOR_FORWARD_ARRAYS        = .false.
+ADIOS_FOR_MPI_ARRAYS            = .true.
+ADIOS_FOR_ARRAYS_SOLVER         = .true.
+ADIOS_FOR_SOLVER_MESHFILES      = .true.
+ADIOS_FOR_AVS_DX                = .true.
+ADIOS_FOR_KERNELS               = .true.
+ADIOS_FOR_MODELS                = .true.
+ADIOS_FOR_UNDO_ATTENUATION      = .true.
