@@ -2,7 +2,7 @@
 
 ### Introduction
 
-Piper is yet another package for full waveform inversion studies. It features a flexible workflow manager and integration with (EnTK)[https://radicalentk.readthedocs.io/en/latest/].
+Piper is yet another package for full waveform inversion studies. It features a flexible workflow manager and integration with [EnTK](https://radicalentk.readthedocs.io/en/latest/).
 
 The workflow of piper consists of 2 levels: stages and tasks. Stages are executed in their creation order. A stage may contain one or more tasks, which are executed in parallel.
 
@@ -13,11 +13,11 @@ Currently there are two options to execute the pipeline: build-in pipeline tool 
 ### Prerequisites
 
 * Python 3.7 or later
-* (Obspy)[https://github.com/obspy/obspy]
-* (CuPy)[https://cupy.chainer.org]
-* (Mpi4py)[https://mpi4py.readthedocs.io/en/stable/]
-* (Cuda)[https://developer.nvidia.com/cuda-zone]
-* (Specfem3D Globe)[https://github.com/geodynamics/specfem3d_globe]
+* Slurm or LSF cluster
+* [Obspy](https://github.com/obspy/obspy)
+* [CuPy](https://cupy.chainer.org) and [CUDA](https://developer.nvidia.com/cuda-zone)
+* [Mpi4py](https://mpi4py.readthedocs.io/en/stable/)
+* [Specfem3D Globe](https://github.com/geodynamics/specfem3d_globe)
 
 ### Running examples
 
