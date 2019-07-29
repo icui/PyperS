@@ -6,7 +6,7 @@ Piper is yet another package for full waveform inversion studies. It features a 
 
 The workflow of piper consists of 2 levels: stages and tasks. Stages are executed in their creation order. A stage may contain one or more tasks, which are executed in parallel.
 
-![Pipeline](https://raw.githubusercontent.com/icui/piper-dev/image/pipeline.png)
+![Pipeline](https://github.com/icui/piper-dev/raw/master/doc/img/pipeline.png)
 
 Currently there are two options to execute the pipeline: build-in pipeline tool for small testing tasks and EnTK for large tasks.
 
