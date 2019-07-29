@@ -1,4 +1,6 @@
 import json
+import datetime
+from time import time
 from sys import stderr
 from piper.tools.shell import call, cwd, write, exists, mkdir
 from piper.pipeline.base import base
@@ -54,38 +56,6 @@ class cluster(base):
 			self.update({'stage': 0, 'failed_tasks': []})
 			with open(stages_path, 'w') as f:
 				json.dump(self._stages, f, indent=4)
-
-	def submit(self):
-		""" create and submit job script
-			use existing job script if available
-		"""
-		# create job script
-		job_path = 'scratch/pipeline/job.bash'
-		
-		if not exists(job_path):
-			# flags for job submission
-			script = self.flags
-
-			# load modules
-			if (hasattr(self, 'modules')):
-				script += '\nmodule load %s\n' % self.modules
-			
-			# preprocess
-			if hasattr(self, 'pre_exec'):
-				script += '\n%s\n' % self.pre_exec
-			
-			# execute stages
-			script += '\npython -c "from piper.modules import pipeline; pipeline.loop()"\n'
-			
-			# postprocess
-			if hasattr(self, 'post_exec'):
-				script += '\n%s\n' % self.post_exec
-
-			# job script
-			write(job_path, script)
-
-		# submit job
-		call('%s %s' % (self.jobexec, job_path))
 	
 	def add_stage(self, *args):
 		""" creates a single task stage executed in first node
@@ -113,6 +83,10 @@ class cluster(base):
 
 		# execute stages
 		while self.stage < nstages:
+			# record execution time
+			if self.profile:
+				time_start = time()
+			
 			stage = stages[self.stage]
 			# convert parallel stages w/ only one task to serial stage
 			if type(stage) == list and len(stage) == 1:
@@ -123,7 +97,7 @@ class cluster(base):
 			if type(stage) == list:
 				# parallel stage
 				print(msg)
-				call(self.mpiexec + ' python -c "from piper.modules import pipeline; pipeline.loop_mpi()"\n')
+				call(self.mpiexec('python -c "from piper.modules import pipeline; pipeline.loop_mpi()"'))
 			
 			else:
 				args = stage['args']
@@ -139,8 +113,12 @@ class cluster(base):
 					bin_dir, bin_file = stage['bin']
 					argstr = ' '.join(str(arg) for arg in args)
 					print(msg + '  %s %s' % (bin_file, argstr))
-					call('cd %s && %s %s %s' % (bin_dir, self.mpiexec, bin_file, argstr))
+					call('cd %s && %s' % (bin_dir, self.mpiexec(bin_file + ' ' + argstr)))
 
+			# print execution time
+			if self.profile:
+				print('   elapsed time: %s' % str(datetime.timedelta(seconds=int(round(time() - time_start)))))
+			
 			self.update({'stage': self.stage + 1})
 		
 		print('done')
@@ -168,11 +146,11 @@ class cluster(base):
 		stage_size = len(stage)
 		taskids = self.failed_tasks if len(self.failed_tasks) else list(range(stage_size))
 
-		# number of failed tasks
+		# record failed tasks
 		status = 0
+		failed = []
 		
 		# execute tasks
-		failed = []
 		for j in taskids:
 			# self.ntasks := total number of processes
 			# rank := index of current process
@@ -206,19 +184,12 @@ class cluster(base):
 		if status:
 			exit(status)
 	
-	@property
-	def flags(self):
-		""" flags used for job submission
+	def submit(self):
+		""" create and submit job script
+			use existing job script if available
 		"""
 		raise NotImplementedError
 	
-	@property
-	def jobexec(self):
-		""" command for job submission
-		"""
-		raise NotImplementedError
-	
-	@property
 	def mpiexec(self):
 		""" command for running parallel task
 		"""

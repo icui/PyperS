@@ -4,8 +4,8 @@ USE_FORCE_POINT_SOURCE          = .false.
 RECORD_LENGTH_IN_MINUTES        = 120.0d0
 
 NCHUNKS                         = 6
-NPROC_XI                        = 1
-NPROC_ETA                       = 1
+NPROC_XI                        = auto
+NPROC_ETA                       = auto
 NEX_XI                          = 48
 NEX_ETA                         = 48
 
@@ -13,14 +13,13 @@ SIMULATION_TYPE                 = 1
 NOISE_TOMOGRAPHY                = 0
 SAVE_FORWARD                    = .true.
 
-UNDO_ATTENUATION                = .false.
-READ_ADJSRC_ASDF                = .false.
-ADIOS_ENABLED                   = .false.
-
 OUTPUT_SEISMOS_ASCII_TEXT       = .false.
 OUTPUT_SEISMOS_SAC_ALPHANUM     = .false.
 OUTPUT_SEISMOS_SAC_BINARY       = .true.
 OUTPUT_SEISMOS_ASDF             = .false.
+
+UNDO_ATTENUATION                = .true.
+READ_ADJSRC_ASDF                = .false.
 
 NTSTEP_BETWEEN_OUTPUT_INFO      = 1000
 NTSTEP_BETWEEN_OUTPUT_SEISMOS   = 5000000
@@ -31,7 +30,7 @@ ELLIPTICITY                     = .false.
 TOPOGRAPHY                      = .false.
 GRAVITY                         = .false.
 ROTATION                        = .false.
-ATTENUATION                     = .false.
+ATTENUATION                     = .true.
 
 ANGULAR_WIDTH_XI_IN_DEGREES     = 90.d0
 ANGULAR_WIDTH_ETA_IN_DEGREES    = 90.d0
@@ -95,11 +94,12 @@ GPU_RUNTIME                     = 1
 GPU_PLATFORM                    = NVIDIA
 GPU_DEVICE                      = Tesla
 
+ADIOS_ENABLED                   = .false.
 ADIOS_FOR_FORWARD_ARRAYS        = .false.
-ADIOS_FOR_MPI_ARRAYS            = .true.
-ADIOS_FOR_ARRAYS_SOLVER         = .true.
-ADIOS_FOR_SOLVER_MESHFILES      = .true.
-ADIOS_FOR_AVS_DX                = .true.
-ADIOS_FOR_KERNELS               = .true.
+ADIOS_FOR_MPI_ARRAYS            = .false.
+ADIOS_FOR_ARRAYS_SOLVER         = .false.
+ADIOS_FOR_SOLVER_MESHFILES      = .false.
+ADIOS_FOR_AVS_DX                = .false.
+ADIOS_FOR_KERNELS               = .false.
 ADIOS_FOR_MODELS                = .true.
-ADIOS_FOR_UNDO_ATTENUATION      = .true.
+ADIOS_FOR_UNDO_ATTENUATION      = .false.

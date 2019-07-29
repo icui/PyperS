@@ -6,13 +6,13 @@ class base(module):
 	"""
 
 	def add_stage(self):
-		""" creates a new stage which contains one task
+		""" create a new stage which contains one task
 			stages are executed in sequence
 		"""
 		raise NotImplementedError
 	
 	def add_task(self):
-		""" creates a new stage which contains multiple tasks and add task to this stage
+		""" create a new stage which contains multiple tasks and add task to this stage
 			later executed add_task() will directly add task to this stage
 			until another add_stage() is called
 		"""

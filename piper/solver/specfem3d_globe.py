@@ -1,10 +1,13 @@
 from math import sqrt
+from glob import glob
 from piper.solver.base import base
 from piper.tools.shell import call, mkdir, cp, rm, mv, read, write, exists
-from piper.modules import pipeline as p
+from piper.modules import pipeline as p, modules
 
 class specfem3d_globe(base):
 	def setpar(self, key, val):
+		""" modify DATA/Par_file in specfem3d_globe
+		"""
 		def split(str, sep):
 			n = str.find(sep)
 			if n >= 0:
@@ -13,7 +16,7 @@ class specfem3d_globe(base):
 				return str, ''
 		
 		lines = []
-		src = self.solver_dir + '/DATA/Par_file'
+		src = 'scratch/solver/DATA/Par_file'
 		val = str(val)
 		for line in read(src).split('\n'):
 			if line.find(key) == 0:
@@ -29,95 +32,127 @@ class specfem3d_globe(base):
 		
 		write(src, '\n'.join(lines))
 	
-	def setup(self):
-		cp('solver/*', self.solver_dir + '/DATA')
-		if not exists(self.solver_dir + '/bin/xmeshfem3D') or \
-			not exists(self.solver_dir + '/bin/xspecfem3D') or \
-			not exists(self.solver_dir + '/bin/xsmooth_sem'):
-			print('waiting for specfem3d_globe compilation')
-			call('piclean')
-			exit()
-
-	def pipe(self, mode=0):
-		""" add mesher to pipeline
+	def check_binary(self, bin_file):
+		""" ensure required binary exists
+			if not, exit and wait for compilation
 		"""
+		if not exists('scratch/solver/bin/' + bin_file):
+			print('waiting for specfem3d_globe compilation')
+			# clear current pipeline
+			rm('scratch')
+			rm('output')
+			exit()
+	
+	def setup(self):
+		""" link specfem3d_globe subdirectories to scratch/solver
+		"""
+		call('ln -s %s scratch/solver' % (self.solver_dir + '/bin'))
+		call('ln -s %s scratch/solver' % (self.solver_dir + '/DATA'))
+		call('ln -s %s scratch/solver' % (self.solver_dir + '/OUTPUT_FILES'))
+		call('ln -s %s scratch/solver' % (self.solver_dir + '/DATABASES_MPI'))
+		call('ln -s %s scratch/solver' % (self.solver_dir + '/SEM'))
+		cp('Par_file', 'scratch/solver/DATA')
+		cp('STATIONS', 'scratch/solver/DATA')
+		cp('STATIONS', 'scratch/solver/DATA/STATIONS_ADJOINT')
+		
+		# set dimension
+		nproc = int(sqrt(p.ntasks / 6))
+		self.setpar('NPROC_XI', nproc)
+		self.setpar('NPROC_ETA', nproc)
+
+	def pipe(self, src, mode=0):
+		""" add solver to pipeline
+			call mesher if no addressing.txt is found
+		"""
+		# call mesher if necessary
 		if not hasattr(self, '_meshed') and \
-			not exists(self.solver_dir + '/OUTPUT_FILES/addressing.txt'):
+			not exists('scratch/solver/OUTPUT_FILES/addressing.txt'):
+			# check and call mesher
+			self.check_binary('xmeshfem3D')
+			p.add_stage('scratch/solver', 'bin/xmeshfem3D')
+
 			# avoid adding mesher multiple times
 			self._meshed = True
-			p.add_stage(self.solver_dir, 'bin/xmeshfem3D')
 
-		p.add_stage(self.pre_run, mode)
-		p.add_stage(self.solver_dir, 'bin/xspecfem3D')
-		p.add_stage(self.post_run, mode)
+		# check and call solver
+		self.check_binary('xspecfem3D')
+		p.add_stage(self.pre_run, src, mode)
+		p.add_stage('scratch/solver', 'bin/xspecfem3D')
+		p.add_stage(self.post_run, src, mode)
 	
-	def pipe_combine_kernels(self):
-		p.add_stage(self.combine_kernels)
-		p.add_stage(self.solver_dir, 'bin/xsum_kernels')
-		p.add_stage(self.sum_kernels)
+	def pipe_export_kernels(self):
+		""" sum and smooth kernels, then combine them into vtk files
+		"""
+		# check tomo binaries
+		self.check_binary('xsmooth_sem')
+		self.check_binary('xsum_kernels')
+		self.check_binary('xcombine_vol_data_vtk')
+
+		kernels = modules['kernel'].kernels
+		sources = modules['kernel'].sources
+
+		# prepare kernel list for summing kernels
+		write('scratch/solver/kernels_list.txt', '\n'.join(sources))
+		
+		# prepare slice list for combining kernels
+		slices = '\n'.join(str(i) for i in range(p.ntasks))
+		write('scratch/solver/slices.txt', slices)
+
+		# sum kernels
+		kernel_names = ','.join((kernel + '_kernel') for kernel in kernels)
+		p.add_stage('scratch/solver', 'bin/xcombine_sem', kernel_names, 'kernels_list.txt', 'DATABASES_MPI')
+		
+		# # smooth kernels
+		# for kernel in kernels:
+		# 	p.add_stage('scratch/solver', 'bin/xsmooth_sem', self.smooth, self.smooth, kernel + '_kernel', 'DATABASES_MPI', 'DATABASES_MPI')
+
+		# combine kernels
+		for kernel in kernels:
+			p.add_task(self.combine_kernel, kernel)
 	
-	def pre_run(self, mode=0):
+	def pre_run(self, src, mode):
+		# copy source to solver direcotory
+		cp('events/%s/CMTSOLUTION' % src, 'scratch/solver/DATA/CMTSOLUTION')
+
 		if mode == 0:
-			# forward w/ save_forward = false
+			# set par_file to forward w/ save_forward = false
 			self.setpar('SIMULATION_TYPE', 1)
 			self.setpar('SAVE_FORWARD', '.true.')
 		
 		elif mode == 1:
-			# forward w/ save_forward = true
+			# set par_file to forward w/ save_forward = true
 			self.setpar('SIMULATION_TYPE', 1)
 			self.setpar('SAVE_FORWARD', '.true.')
 		
 		elif mode == 2:
-			# adjoint
+			# copy adjoint sources
+			adjoint_sources = glob('scratch/kernel/%s/*' % src)
+			for adsrc in adjoint_sources:
+				cp(adsrc, 'scratch/solver/SEM/' + adsrc.split('/')[-1][0:-7] + 'adj')
+			
+			# set par_file to adjoint
 			self.setpar('SIMULATION_TYPE', 3)
 			self.setpar('SAVE_FORWARD', '.false.')
 
-	def post_run(self, mode=0):
-		if mode != 2:
-			self.export_traces()
-	
-	def import_source(self, src):
-		cp(src, self.solver_dir + '/DATA/CMTSOLUTION')
-	
-	def import_adjoint_source(self, src):
-		cp(src, self.solver_dir + '/SEM/' + src.split('/')[-1][0:-7] + 'adj')
-	
-	def export_traces(self):
-		mkdir('scratch/solver/traces')
-		cp(self.solver_dir + '/OUTPUT_FILES/*.sem.sac', 'scratch/solver/traces')
-	
-	def prepare_kernel(self, src):
-		kernel_dir = self.solver_dir + '/INPUT_KERNELS/%s' % src
-		mkdir(kernel_dir)
-		mkdir(self.solver_dir + '/OUTPUT_SUM')
-		mv(self.solver_dir + '/DATABASES_MPI/*_kernel.bin', kernel_dir)
-	
-	def combine_kernels(self):
-		# kernel module is loaded after solver module, so it can't be imported at the top of this file
-		from piper.modules import kernel
-		write(self.solver_dir + '/kernels_list.txt', '\n'.join(kernel.sources))
+	def post_run(self, src, mode):
+		""" export traces in forward mode
+			export kernel in adjoint mode
+		"""
+		# create directory for output
+		mkdir('scratch/solver/' + src)
 
-	def sum_kernels(self):
-		slices = '\n'.join(str(i) for i in range(p.ntasks))
-		write(self.solver_dir + '/DATA/slices.txt', slices)
-
-		ks = []
-		if kernel.alpha:
-			ks.append('alpha')
+		if mode == 2:
+			# export kernels in adjoint mode
+			mv('scratch/solver/DATABASES_MPI/*_kernel.bin', 'scratch/solver/' + src)
 		
-		if kernel.beta:
-			ks.append('beta')
-		
-		if kernel.rho:
-			ks.append('rho')
-
-		for k in ks:
-			print(' - combining %s kernel' % k)
-			call(('cd %s && ./bin/xcombine_vol_data_vtk DATA/slices.txt' % self.solver_dir) + \
-				(' %s_kernel DATABASES_MPI OUTPUT_SUM OUTPUT_FILES 1 1' % k))
-		
-		mv(self.solver_dir + '/OUTPUT_FILES/*.vtk', 'output')
+		else:
+			# export traces in forward mode
+			mv('scratch/solver/OUTPUT_FILES/*.sem.sac', 'scratch/solver/' + src)
 	
-	@property
-	def writable_dirs(self):
-		return [self.solver_dir]
+	def combine_kernel(self, kernel):
+		""" combine kernel to a single vtk file
+		"""
+		call('cd scratch/solver && ./bin/xcombine_vol_data_vtk slices.txt ' + kernel + \
+			'_kernel DATABASES_MPI DATABASES_MPI OUTPUT_FILES 1 1')
+		
+		mv('scratch/solver/OUTPUT_FILES/*.vtk', 'output')
